@@ -156,3 +156,29 @@ class SubscriptionTests(APITestCase):
         self.assertEqual(sprint_sub_response[0].get('usage_type'), ['DataUsageRecord', 'VoiceUsageRecord'])
         self.assertEqual(sprint_sub_response[0].get('data_exceeded_limit'), abs(data_usage_price - price_limit))
         self.assertEqual(sprint_sub_response[0].get('voice_exceeded_limit'), abs(second_usage_price - price_limit))
+
+    def test_negative_subscriptions_data_and_voice(self):
+        usage_counter = 5
+        kilobytes_used = 2466
+        price_limit = -5
+        seconds_used = 5000
+        VoiceUsageRecordFactory.create_batch(
+            usage_counter,
+            seconds_used=seconds_used,
+            sprint_subscription=self.sprint_subscription
+        )
+        DataUsageRecordFactory.create_batch(
+            usage_counter,
+            kilobytes_used=kilobytes_used,
+            sprint_subscription=self.sprint_subscription
+        )
+        url = reverse('reached_subscriptions')
+        response = self.client.get(url, {'price_limit': price_limit})
+        sprint_sub_response = response.data.get('sprint_subscriptions')
+        data_usage_price = usage_counter * kilobytes_used * SprintSubscription.ONE_KILOBYTE_PRICE
+        second_usage_price = usage_counter * seconds_used * SprintSubscription.ONE_SECOND_PRICE
+        self.assertEqual(sprint_sub_response[0].get('id'), self.sprint_subscription.id)
+        self.assertEqual(sprint_sub_response[0].get('usage_type'), ['DataUsageRecord', 'VoiceUsageRecord'])
+        self.assertEqual(sprint_sub_response[0].get('data_exceeded_limit'), abs(data_usage_price - price_limit))
+        self.assertEqual(sprint_sub_response[0].get('voice_exceeded_limit'), abs(second_usage_price - price_limit))
+
