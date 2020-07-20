@@ -1,22 +1,47 @@
 from django.db import models
 
-from wt.att_subscriptions.models import ATTSubscription
-from wt.sprint_subscriptions.models import SprintSubscription
+from wt.subscriptions.models import ATTSubscription
+from wt.subscriptions.models import SprintSubscription
 
 
-class DataUsageRecord(models.Model):
+class BaseUsageRecord(models.Model):
+    """Base model for usage record"""
+    att_subscription = models.ForeignKey(ATTSubscription, null=True, blank=True, on_delete=models.PROTECT)
+    sprint_subscription = models.ForeignKey(SprintSubscription, null=True, blank=True, on_delete=models.PROTECT)
+    price = models.DecimalField(decimal_places=2, max_digits=5, default=0)
+    usage_date = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class DataUsageRecord(BaseUsageRecord):
     """Raw data usage record for a subscription"""
-    att_subscription_id = models.ForeignKey(ATTSubscription, null=True, on_delete=models.PROTECT)
-    sprint_subscription_id = models.ForeignKey(SprintSubscription, null=True, on_delete=models.PROTECT)
-    price = models.DecimalField(decimal_places=2, max_digits=5, default=0)
-    usage_date = models.DateTimeField(null=True)
-    kilobytes_used = models.IntegerField(null=False)
+    kilobytes_used = models.IntegerField(blank=True, null=True)
 
 
-class VoiceUsageRecord(models.Model):
+class VoiceUsageRecord(BaseUsageRecord):
     """Raw voice usage record for a subscription"""
-    att_subscription_id = models.ForeignKey(ATTSubscription, null=True, on_delete=models.PROTECT)
-    sprint_subscription_id = models.ForeignKey(SprintSubscription, null=True, on_delete=models.PROTECT)
-    price = models.DecimalField(decimal_places=2, max_digits=5, default=0)
-    usage_date = models.DateTimeField(null=True)
-    seconds_used = models.IntegerField(null=False)
+    seconds_used = models.IntegerField(blank=True, null=True)
+
+
+class BaseAggregateData(models.Model):
+    """Base model for usage aggregated data"""
+    from_date = models.DateTimeField()
+    to_date = models.DateTimeField()
+    aggregated_price = models.DecimalField(decimal_places=2, max_digits=5, default=0)
+
+    class Meta:
+        abstract = True
+
+
+class AggregateDataUsage(BaseAggregateData):
+    """Aggregated data usage"""
+    data_records = models.ManyToManyField(DataUsageRecord)
+    aggregated_kilobytes_used = models.IntegerField(blank=True, null=True)
+
+
+class AggregateVoiceUsage(BaseAggregateData):
+    """Aggregated voice usage"""
+    voice_records = models.ManyToManyField(VoiceUsageRecord)
+    aggregated_seconds_used = models.IntegerField(blank=True, null=True)

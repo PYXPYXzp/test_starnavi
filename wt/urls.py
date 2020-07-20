@@ -19,10 +19,9 @@ from django.urls import path
 
 from rest_framework import routers
 
-from wt.att_subscriptions.views import ATTSubscriptionViewSet
+from wt.subscriptions.views import ATTSubscriptionViewSet, SprintSubscriptionViewSet
 from wt.plans.views import PlanViewSet
 from wt.purchases.views import PurchaseViewSet
-from wt.sprint_subscriptions.views import SprintSubscriptionViewSet
 
 router = routers.DefaultRouter()
 
@@ -33,5 +32,6 @@ router.register(r'sprint_subscriptions', SprintSubscriptionViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    url(r'^api/', include((router.urls, 'api'), namespace='api')),
+    path('api/', include(router.urls)),
+    path('api/subscriptions/', include('wt.subscriptions.urls'))
 ]
